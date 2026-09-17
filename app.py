@@ -1047,4 +1047,6 @@ st.header(
 
 st.write(
     "Each historical signal uses only information available "
-    "at that c
+    "at that candle. The selected expiry candles are used "
+    "only to evaluate the later outcome."
+)
