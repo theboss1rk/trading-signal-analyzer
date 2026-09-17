@@ -102,109 +102,115 @@ def indicators(df):
 
 # ---------- SIGNAL ENGINE ----------
 
-def make_signal(x):
+# -------- BACKTEST ENGINE --------
 
-    last = x.iloc[-1]
+def backtest(df, expiry=1):
+    results = []
 
-    bull = 0
-    bear = 0
+    for i in range(100, len(df) - expiry):
 
-    reasons = []
+        current = df.iloc[:i + 1].copy()
 
-    # EMA
-    if last.ema20 > last.ema50:
+        current = indicators(current)
 
-        bull += 2
+        signal, score, reasons = make_signal(current)
 
-        reasons.append(
-            "EMA20 > EMA50: bullish trend"
-        )
+        if signal == "NO TRADE":
+            continue
 
-    elif last.ema20 < last.ema50:
+        entry = float(df.iloc[i]["close"])
+        future = float(df.iloc[i + expiry]["close"])
 
-        bear += 2
+        if signal == "CALL":
+            result = "WIN" if future > entry else "LOSS"
 
-        reasons.append(
-            "EMA20 < EMA50: bearish trend"
-        )
+        elif signal == "PUT":
+            result = "WIN" if future < entry else "LOSS"
 
-    # RSI
-    if last.rsi > 55:
+        else:
+            continue
 
-        bull += 1
+        results.append({
+            "time": df.iloc[i]["datetime"],
+            "signal": signal,
+            "score": round(float(score), 2),
+            "entry": entry,
+            "future": future,
+            "result": result
+        })
 
-        reasons.append(
-            f"RSI {last.rsi:.1f}: bullish momentum"
-        )
+    return pd.DataFrame(results)
 
-    elif last.rsi < 45:
 
-        bear += 1
+# -------- BACKTEST UI --------
 
-        reasons.append(
-            f"RSI {last.rsi:.1f}: bearish momentum"
-        )
+st.subheader("📊 Strategy Backtest")
+
+expiry = st.selectbox(
+    "Expiry Candles",
+    [1, 2, 3, 5],
+    index=0
+)
+
+if st.button("🔬 RUN BACKTEST"):
+
+    results = backtest(df, expiry)
+
+    if results.empty:
+
+        st.warning("No valid trades found.")
 
     else:
 
-        reasons.append(
-            f"RSI {last.rsi:.1f}: neutral"
+        total = len(results)
+
+        wins = int(
+            (results["result"] == "WIN").sum()
         )
 
-    # MACD
-    if last.macd > last.macd_sig:
-
-        bull += 1
-
-        reasons.append(
-            "MACD bullish"
+        losses = int(
+            (results["result"] == "LOSS").sum()
         )
 
-    elif last.macd < last.macd_sig:
-
-        bear += 1
-
-        reasons.append(
-            "MACD bearish"
+        win_rate = (
+            wins / total * 100
+            if total > 0
+            else 0
         )
 
-    # Price vs EMA20
-    if last.close > last.ema20:
+        col1, col2, col3, col4 = st.columns(4)
 
-        bull += 1
-
-    elif last.close < last.ema20:
-
-        bear += 1
-
-    # ADX filter
-    if last.adx < 20:
-
-        reasons.append(
-            f"ADX {last.adx:.1f}: weak trend → NO TRADE"
+        col1.metric(
+            "Total Trades",
+            total
         )
 
-        return "NO TRADE", 0, reasons
+        col2.metric(
+            "Wins",
+            wins
+        )
 
-    total = bull + bear
+        col3.metric(
+            "Losses",
+            losses
+        )
 
-    if total == 0:
+        col4.metric(
+            "Win Rate",
+            f"{win_rate:.2f}%"
+        )
 
-        return "NO TRADE", 0, reasons
+        st.divider()
 
-    confidence = max(bull, bear) / total * 100
+        st.subheader("📋 Trade History")
 
-    # CALL
-    if bull >= 4 and bull > bear:
+        st.dataframe(
+            results,
+            use_container_width=True,
+            hide_index=True
+        )
 
-        return "CALL", confidence, reasons
 
-    # PUT
-    if bear >= 4 and bear > bull:
-
-        return "PUT", confidence, reasons
-
-    return "NO TRADE", confidence, reasons
 
 
 # ---------- SIDEBAR ----------
