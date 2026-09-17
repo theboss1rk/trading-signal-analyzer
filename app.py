@@ -1,12 +1,8 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
-
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
 
 st.set_page_config(
     page_title="SCALPING MASTER",
@@ -14,80 +10,57 @@ st.set_page_config(
     layout="wide"
 )
 
-
-# ============================================================
-# CUSTOM UI
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #050805;
-        color: #e8ffe8;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #071007;
-    }
-
-    .main-title {
-        font-size: 42px;
-        font-weight: 900;
-        color: #39ff88;
-        text-shadow: 0 0 14px rgba(57,255,136,0.55);
-        margin-bottom: 0;
-    }
-
-    .subtitle {
-        color: #8ca88f;
-        margin-bottom: 25px;
-    }
-
-    .signal-box {
-        padding: 28px;
-        border: 1px solid #1eff72;
-        border-radius: 14px;
-        background: linear-gradient(
-            135deg,
-            rgba(20,45,25,0.95),
-            rgba(5,15,7,0.98)
-        );
-        text-align: center;
-        box-shadow: 0 0 20px rgba(30,255,114,0.10);
-    }
-
-    .signal-call {
-        color: #39ff88;
-        font-size: 48px;
-        font-weight: 900;
-    }
-
-    .signal-put {
-        color: #ff5c5c;
-        font-size: 48px;
-        font-weight: 900;
-    }
-
-    .signal-none {
-        color: #ffd166;
-        font-size: 42px;
-        font-weight: 900;
-    }
-
-    .small-note {
-        color: #8ca88f;
-        font-size: 13px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# HEADER
-# ============================================================
+st.markdown("""
+<style>
+.stApp {
+    background-color:#050805;
+    color:#e8ffe8;
+}
+[data-testid="stSidebar"] {
+    background-color:#071007;
+}
+.main-title {
+    font-size:42px;
+    font-weight:900;
+    color:#39ff88;
+    text-shadow:0 0 14px rgba(57,255,136,.55);
+}
+.subtitle {
+    color:#8ca88f;
+    margin-bottom:25px;
+}
+.signal-box {
+    padding:28px;
+    border:1px solid #1eff72;
+    border-radius:14px;
+    background:linear-gradient(
+        135deg,
+        rgba(20,45,25,.95),
+        rgba(5,15,7,.98)
+    );
+    text-align:center;
+}
+.signal-call {
+    color:#39ff88;
+    font-size:48px;
+    font-weight:900;
+}
+.signal-put {
+    color:#ff5c5c;
+    font-size:48px;
+    font-weight:900;
+}
+.signal-none {
+    color:#ffd166;
+    font-size:42px;
+    font-weight:900;
+}
+.small-note {
+    color:#8ca88f;
+    font-size:13px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown(
     '<div class="main-title">⚡ SCALPING MASTER</div>',
@@ -95,7 +68,9 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="subtitle">Market Analysis • Backtesting • Paper Trading Research</div>',
+    '<div class="subtitle">'
+    'Market Analysis • Backtesting • Paper Trading Research'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -148,10 +123,9 @@ def rsi(series, period=14):
 
 
 def atr(df, period=14):
-
     previous_close = df["close"].shift(1)
 
-    true_range = pd.concat(
+    tr = pd.concat(
         [
             df["high"] - df["low"],
             (df["high"] - previous_close).abs(),
@@ -160,7 +134,7 @@ def atr(df, period=14):
         axis=1
     ).max(axis=1)
 
-    return true_range.ewm(
+    return tr.ewm(
         alpha=1 / period,
         adjust=False,
         min_periods=period
@@ -168,7 +142,6 @@ def atr(df, period=14):
 
 
 def adx(df, period=14):
-
     up_move = df["high"].diff()
     down_move = -df["low"].diff()
 
@@ -182,7 +155,10 @@ def adx(df, period=14):
         0.0
     )
 
-    atr_value = atr(df, period)
+    atr_value = atr(
+        df,
+        period
+    ).replace(0, np.nan)
 
     plus_di = (
         100
@@ -191,7 +167,7 @@ def adx(df, period=14):
             adjust=False,
             min_periods=period
         ).mean()
-        / atr_value.replace(0, np.nan)
+        / atr_value
     )
 
     minus_di = (
@@ -201,7 +177,7 @@ def adx(df, period=14):
             adjust=False,
             min_periods=period
         ).mean()
-        / atr_value.replace(0, np.nan)
+        / atr_value
     )
 
     denominator = (
@@ -222,13 +198,22 @@ def adx(df, period=14):
 
 
 def calculate_indicators(df):
-
     x = df.copy()
 
-    x["ema20"] = ema(x["close"], 20)
-    x["ema50"] = ema(x["close"], 50)
+    x["ema20"] = ema(
+        x["close"],
+        20
+    )
 
-    x["rsi"] = rsi(x["close"], 14)
+    x["ema50"] = ema(
+        x["close"],
+        50
+    )
+
+    x["rsi"] = rsi(
+        x["close"],
+        14
+    )
 
     x["macd"] = (
         ema(x["close"], 12)
@@ -240,8 +225,15 @@ def calculate_indicators(df):
         9
     )
 
-    x["adx"] = adx(x, 14)
-    x["atr"] = atr(x, 14)
+    x["adx"] = adx(
+        x,
+        14
+    )
+
+    x["atr"] = atr(
+        x,
+        14
+    )
 
     return x
 
@@ -254,9 +246,13 @@ def generate_signal(
     x,
     adx_threshold=20
 ):
-
     if len(x) < 55:
-        return "NO TRADE", 0, 0, []
+        return (
+            "NO TRADE",
+            0,
+            0,
+            ["At least 55 candles are required."]
+        )
 
     last = x.iloc[-1]
 
@@ -272,8 +268,8 @@ def generate_signal(
     ]
 
     if any(
-        pd.isna(last[column])
-        for column in required
+        pd.isna(last[c])
+        for c in required
     ):
         return (
             "NO TRADE",
@@ -286,7 +282,6 @@ def generate_signal(
     bear = 0
     reasons = []
 
-    # EMA
     if last["ema20"] > last["ema50"]:
         bull += 2
         reasons.append(
@@ -304,7 +299,6 @@ def generate_signal(
             "EMA20 = EMA50 → neutral"
         )
 
-    # RSI
     if 55 <= last["rsi"] <= 70:
         bull += 1
         reasons.append(
@@ -332,7 +326,6 @@ def generate_signal(
             f"RSI {last['rsi']:.1f} → neutral"
         )
 
-    # MACD
     if last["macd"] > last["macd_signal"]:
         bull += 1
         reasons.append(
@@ -345,7 +338,11 @@ def generate_signal(
             "MACD < Signal → bearish"
         )
 
-    # Price vs EMA20
+    else:
+        reasons.append(
+            "MACD = Signal → neutral"
+        )
+
     if last["close"] > last["ema20"]:
         bull += 1
         reasons.append(
@@ -358,7 +355,11 @@ def generate_signal(
             "Price below EMA20"
         )
 
-    # ADX filter
+    else:
+        reasons.append(
+            "Price = EMA20 → neutral"
+        )
+
     if last["adx"] < adx_threshold:
         reasons.append(
             f"ADX {last['adx']:.1f} < {adx_threshold} "
@@ -409,7 +410,7 @@ def generate_signal(
 
 
 # ============================================================
-# DATA FETCH
+# TWELVE DATA
 # ============================================================
 
 def fetch_market_data(
@@ -418,83 +419,78 @@ def fetch_market_data(
     bars,
     api_key
 ):
+    if not api_key.strip():
+        raise RuntimeError(
+            "Twelve Data API key is missing."
+        )
 
-    url = "https://api.twelvedata.com/time_series"
+    url = (
+        "https://api.twelvedata.com/"
+        "time_series"
+    )
 
     params = {
         "symbol": symbol,
         "interval": interval,
         "outputsize": int(bars),
-        "apikey": api_key,
+        "apikey": api_key.strip(),
         "format": "JSON"
     }
 
     try:
-
         response = requests.get(
             url,
             params=params,
             timeout=20
         )
 
-    except requests.exceptions.Timeout:
-
+    except requests.exceptions.Timeout as exc:
         raise RuntimeError(
-            "Twelve Data request timed out. "
-            "Please try again."
-        )
+            "Twelve Data request timed out."
+        ) from exc
 
-    except requests.exceptions.RequestException:
-
+    except requests.exceptions.RequestException as exc:
         raise RuntimeError(
             "Could not connect to Twelve Data."
-        )
+        ) from exc
 
     if response.status_code == 429:
-
         raise RuntimeError(
-            "Twelve Data rate limit reached. "
-            "Wait a little and try again."
+            "Twelve Data rate limit reached."
         )
 
     if response.status_code != 200:
-
         raise RuntimeError(
             f"Twelve Data HTTP error: "
             f"{response.status_code}"
         )
 
     try:
-
         data = response.json()
 
-    except ValueError:
-
+    except ValueError as exc:
         raise RuntimeError(
-            "Twelve Data returned invalid data."
-        )
+            "Twelve Data returned invalid JSON."
+        ) from exc
 
     message = str(
         data.get("message", "")
-    ).lower()
+    )
 
     if (
-        data.get("status") == "error"
-        or "rate limit" in message
-        or "api credits" in message
+        str(
+            data.get("status", "")
+        ).lower() == "error"
+        or "rate limit" in message.lower()
+        or "api credits" in message.lower()
     ):
-
         raise RuntimeError(
-            data.get(
-                "message",
-                "Twelve Data API error."
-            )
+            message or "Twelve Data API error."
         )
 
     values = data.get("values")
 
-    if not values:
-
+    if not isinstance(values, list) or not values:
         raise RuntimeError(
             "No market candles returned."
         )
@@ -515,7 +511,6 @@ def fetch_market_data(
     ]
 
     if missing:
-
         raise RuntimeError(
             "Missing columns: "
             + ", ".join(missing)
@@ -527,7 +522,6 @@ def fetch_market_data(
         "low",
         "close"
     ]:
-
         df[column] = pd.to_numeric(
             df[column],
             errors="coerce"
@@ -539,13 +533,7 @@ def fetch_market_data(
     )
 
     df = df.dropna(
-        subset=[
-            "datetime",
-            "open",
-            "high",
-            "low",
-            "close"
-        ]
+        subset=required
     )
 
     df = df.drop_duplicates(
@@ -556,8 +544,20 @@ def fetch_market_data(
         "datetime"
     ).reset_index(drop=True)
 
-    if len(df) < 55:
+    df = df[
+        (
+            df[
+                [
+                    "open",
+                    "high",
+                    "low",
+                    "close"
+                ]
+            ] > 0
+        ).all(axis=1)
+    ].reset_index(drop=True)
 
+    if len(df) < 55:
         raise RuntimeError(
             f"Only {len(df)} valid candles available. "
             "At least 55 are required."
@@ -570,45 +570,49 @@ def fetch_market_data(
 # BACKTEST
 # ============================================================
 
+def empty_stats():
+    return {
+        "total_trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "calls": 0,
+        "puts": 0,
+        "max_consecutive_losses": 0,
+        "profit_loss": 0.0,
+        "max_drawdown": 0.0
+    }
+
+
 def backtest(
     df,
     expiry_candles,
     payout_percent,
     adx_threshold
 ):
-
-    if len(df) < 60:
-
-        return pd.DataFrame(), {
-            "total_trades": 0,
-            "wins": 0,
-            "losses": 0,
-            "win_rate": 0,
-            "calls": 0,
-            "puts": 0,
-            "max_consecutive_losses": 0,
-            "profit_loss": 0,
-            "max_drawdown": 0
-        }
+    if len(df) < 55 + expiry_candles:
+        return (
+            pd.DataFrame(),
+            empty_stats()
+        )
 
     x = calculate_indicators(df)
 
     trades = []
 
-    start_index = 54
-
     last_signal_index = (
-        len(x) - expiry_candles - 1
+        len(x)
+        - expiry_candles
+        - 1
     )
 
     for i in range(
-        start_index,
+        54,
         last_signal_index + 1
     ):
-
         history = x.iloc[:i + 1]
 
-        signal, bull, bear, reasons = generate_signal(
+        signal, _, _, _ = generate_signal(
             history,
             adx_threshold
         )
@@ -630,107 +634,99 @@ def backtest(
         )
 
         if signal == "CALL":
-
             result = (
                 "WIN"
                 if expiry_price > entry_price
                 else "LOSS"
             )
-
         else:
-
             result = (
                 "WIN"
                 if expiry_price < entry_price
                 else "LOSS"
             )
 
+        pnl = (
+            payout_percent / 100
+            if result == "WIN"
+            else -1.0
+        )
+
         trades.append(
             {
-                "Signal Time": x.iloc[i]["datetime"],
-                "Expiry Time": x.iloc[
-                    i + expiry_candles
-                ]["datetime"],
+                "Signal Time":
+                    x.iloc[i]["datetime"],
+                "Expiry Time":
+                    x.iloc[
+                        i + expiry_candles
+                    ]["datetime"],
                 "Signal": signal,
                 "Entry": entry_price,
-                "Expiry Price": expiry_price,
-                "Result": result
+                "Expiry Price":
+                    expiry_price,
+                "Result": result,
+                "P/L": pnl
             }
         )
 
-    results = pd.DataFrame(trades)
+    results = pd.DataFrame(
+        trades
+    )
 
     if results.empty:
-
-        return results, {
-            "total_trades": 0,
-            "wins": 0,
-            "losses": 0,
-            "win_rate": 0,
-            "calls": 0,
-            "puts": 0,
-            "max_consecutive_losses": 0,
-            "profit_loss": 0,
-            "max_drawdown": 0
-        }
-
-    results["P/L"] = np.where(
-        results["Result"] == "WIN",
-        payout_percent / 100,
-        -1.0
-    )
+        return (
+            results,
+            empty_stats()
+        )
 
     total = len(results)
 
     wins = int(
-        (results["Result"] == "WIN").sum()
+        (
+            results["Result"] == "WIN"
+        ).sum()
     )
 
     losses = int(
-        (results["Result"] == "LOSS").sum()
+        (
+            results["Result"] == "LOSS"
+        ).sum()
+    )
+
+    calls = int(
+        (
+            results["Signal"] == "CALL"
+        ).sum()
+    )
+
+    puts = int(
+        (
+            results["Signal"] == "PUT"
+        ).sum()
     )
 
     win_rate = (
         wins / total * 100
-        if total > 0
-        else 0
+        if total
+        else 0.0
     )
 
-    calls = int(
-        (results["Signal"] == "CALL").sum()
-    )
-
-    puts = int(
-        (results["Signal"] == "PUT").sum()
-    )
-
-    max_consecutive_losses = 0
     current_losses = 0
+    max_losses = 0
 
     for result in results["Result"]:
-
         if result == "LOSS":
-
             current_losses += 1
-
-            max_consecutive_losses = max(
-                max_consecutive_losses,
+            max_losses = max(
+                max_losses,
                 current_losses
             )
-
         else:
-
             current_losses = 0
 
     equity = results["P/L"].cumsum()
-
     peak = equity.cummax()
-
     drawdown = equity - peak
-
-    max_drawdown = float(
-        drawdown.min()
-    )
 
     stats = {
         "total_trades": total,
@@ -740,11 +736,11 @@ def backtest(
         "calls": calls,
         "puts": puts,
         "max_consecutive_losses":
-            max_consecutive_losses,
+            max_losses,
         "profit_loss":
             float(results["P/L"].sum()),
         "max_drawdown":
-            max_drawdown
+            float(drawdown.min())
     }
 
     return results, stats
@@ -829,11 +825,11 @@ analyze_button = st.sidebar.button(
 
 st.info(
     "Research / paper-trading system only. "
-    "No broker account connection and no automatic trade execution."
+    "No broker account connection and no automatic "
+    "trade execution."
 )
 
 if broker == "Quotex (Reference Only)":
-
     st.warning(
         "Quotex is only a reference label. "
         "This application does not connect to Quotex "
@@ -862,17 +858,22 @@ if analyze_button:
             try:
 
                 live_df = fetch_market_data(
-                    symbol,
-                    interval,
-                    bars,
-                    api_key
+                    symbol=symbol,
+                    interval=interval,
+                    bars=bars,
+                    api_key=api_key
                 )
 
                 live_x = calculate_indicators(
                     live_df
                 )
 
-                signal, bull, bear, reasons = generate_signal(
+                (
+                    signal,
+                    bull,
+                    bear,
+                    reasons
+                ) = generate_signal(
                     live_x,
                     adx_threshold
                 )
@@ -897,7 +898,6 @@ if analyze_button:
 if "live_x" in st.session_state:
 
     live_x = st.session_state.live_x
-
     signal = st.session_state.live_signal
     bull = st.session_state.live_bull
     bear = st.session_state.live_bear
@@ -906,45 +906,34 @@ if "live_x" in st.session_state:
     last = live_x.iloc[-1]
 
     if signal == "CALL":
-
         signal_class = "signal-call"
-
     elif signal == "PUT":
-
         signal_class = "signal-put"
-
     else:
-
         signal_class = "signal-none"
 
-    total_score = bull + bear
-
     technical_score = (
-        max(bull, bear)
-        / total_score
-        * 100
-        if total_score > 0
-        else 0
+        max(bull, bear) / 5 * 100
     )
 
     st.markdown(
         f"""
         <div class="signal-box">
-
             <div class="{signal_class}">
                 {signal}
             </div>
 
             <div>
                 Technical Score:
-                <strong>{technical_score:.0f}/100</strong>
+                <strong>
+                    {technical_score:.0f}/100
+                </strong>
             </div>
 
             <div class="small-note">
                 Technical score is NOT a probability
                 of winning.
             </div>
-
         </div>
         """,
         unsafe_allow_html=True
@@ -1007,7 +996,6 @@ if "live_x" in st.session_state:
     )
 
     for reason in reasons:
-
         st.write(
             "• " + reason
         )
@@ -1036,7 +1024,7 @@ if "live_x" in st.session_state:
 
 
 # ============================================================
-# BACKTEST
+# BACKTEST UI
 # ============================================================
 
 st.divider()
@@ -1046,7 +1034,11 @@ st.header(
 )
 
 st.write(
-    "Each historical signal uses only information available "
-    "at that candle. The selected expiry candles are used "
-    "only to evaluate the later outcome."
+    "Each historical signal uses only information "
+    "available at that candle. Future candles are used "
+    "only to evaluate the selected expiry outcome."
 )
+
+b1, b2 = st.columns(2)
+
+with b1:
